@@ -3,7 +3,14 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import *
-
+class CustomUsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUsers
+        fields = '__all__'
+class CustomUsersSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUsers
+        fields = ['username', 'full_name']
 class CustomUserSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     class Meta:
@@ -31,10 +38,36 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUsers.objects.create_user(**validated_data)
         return user
-class PDLocationSerializer(serializers.ModelSerializer):
+
+class PDlction(serializers.ModelSerializer):
+
+
+    
     class Meta:
         model = PDLocation
         fields = '__all__'
+        
+class PDLocationSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    full_name = serializers.CharField(source='user.full_name')
+    phone_number = serializers.CharField(source='user.phone_number')
+
+    class Meta:
+        model = PDLocation
+        fields = ['current_latitude','current_longitude','destination_latitude', 'destination_longitude', 'destination_address', 'people_count', 'pickup_time', 'status', 'user_id', 'username', 'full_name','phone_number']
+class PDLocationSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = PDLocation
+        fields = '__all__'
+class CustomUsersSerial(serializers.ModelSerializer):
+    location = PDLocationSerializer()  # Assuming CustomUsers has a ForeignKey to PDLocation
+
+    class Meta:
+        model = CustomUsers
+        # fields = ['current_latitude','current_longitude','destination_latitude', 'destination_longitude', 'destination_address', 'people_count', 'pickup_time', 'status', 'user_id', 'username', 'full_name']
+        fields = ['location']
+    
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -62,8 +95,17 @@ class LocationSerializer(serializers.ModelSerializer):
 class Dummyserial(serializers.Serializer):
    username = serializers.CharField(max_length=50)
 
+class CustomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUsers
+        fields = ['id','is_accepted']
+
 class PasswordUpdateSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6, min_length=6)
+    new_password = serializers.CharField(write_only=True)
+class ChangePasswordSerializer(serializers.Serializer):
+    user_id = serializers.CharField()
+    password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
 
 

@@ -19,6 +19,12 @@ from rest_framework.response import Response
 from geopy.distance import geodesic
 from .serializers import CustomUserSerializer, LocationSerializer
 import json
+# Added new files
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from django.core.mail import EmailMessage
 
 
 # class NearbyDriversAPIView(generics.ListAPIView):
@@ -105,8 +111,7 @@ import json
 #         return nearby_drivers
     
 
-class CustomUserAPIView(APIView):   
-   
+class CustomUserAPIView(APIView):
     def get(self, request, pk=None):
         if pk is not None:
             try:
@@ -129,7 +134,7 @@ class CustomUserAPIView(APIView):
         email = request.data.get('email')
         if self.is_duplicate_value('username', username):
             print("Username already exists.")
-            main= "Username already exists."
+            main= "Username already exists."    
             return Response({"asgi": main}, status=status.HTTP_400_BAD_REQUEST)
         elif self.is_duplicate_value('phone_number', phone_number):
             print("Phone number already exists.")
@@ -146,8 +151,8 @@ class CustomUserAPIView(APIView):
             return Response({"asgi": main}, status=status.HTTP_201_CREATED)
         errors = serializer.errors
         print(errors)
-        # return Response({'error': "Bad Request", 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"error": "Email already exists."}, )
+        return Response({'error': "Bad Request", 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+        # return Response({"error": "Email already exists."}, )
 
     def patch(self, request, pk):
         instance = CustomUsers.objects.get(pk=pk)
@@ -175,10 +180,11 @@ class LoginAPIView(APIView):
         }
         print(response_data)
         return Response({'main':response_data}, status=status.HTTP_200_OK)
-    
+
 class UserTypeListView(APIView):
-    def get(self, request ):
+    def get(self, request):
         user_type = self.kwargs.get('user_type')
+        print(user_type)
         if not user_type:
             return Response({'error': 'User type parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
         users = CustomUsers.objects.filter(user_type=user_type)
@@ -204,12 +210,13 @@ class PasswordUpdateView(views.APIView):
     def post(self, request, *args, **kwargs):
         serializer = PasswordUpdateSerializer(data=request.data)
         print(request.data)
+        user = request.data.get('user')
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
             new_password = serializer.validated_data['new_password']
             
             # Validate OTP
-            user = self.verify_otp(2, otp)
+            user = self.verify_otp(user, otp)
             print(user)
             if user:
                 # Update the password
@@ -233,6 +240,24 @@ class PasswordUpdateView(views.APIView):
         except OTP.DoesNotExist:
             return None
         
+class ChangePasswordView(APIView):
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)        
+        if serializer.is_valid():
+            user_id = serializer.validated_data['user_id']
+            new_password = serializer.validated_data['new_password']
+            password = serializer.validated_data['password']            
+            try:
+                user = CustomUsers.objects.get(id=user_id)
+            except CustomUsers.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)            
+            if not user.check_password(password):
+                return Response({'message': 'Old password is incorrect'}, status=status.HTTP_400_BAD_REQUEST)            
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class ForgotPasswordView(views.APIView):
     def post(self, request, *args, **kwargs):
@@ -245,11 +270,21 @@ class ForgotPasswordView(views.APIView):
             OTP.objects.create(user=user, otp=otp_code)
             subject = 'Password Reset OTP'
             message = f'Your OTP for password reset is: {otp_code}'
+            sender = "noreply@ramo.co.in"
             print(message)
             from_email = 'sonalisharma7224@gmail.com'
             recipient_list = [email]
 
-            send_mail(subject, message, from_email, recipient_list)
+            # send_mail(subject, message, from_email, recipient_list)
+            try:
+                # Using Django's EmailMessage
+                email = EmailMessage(subject, message, sender, recipient_list)
+                email.send()
+        
+            except Exception as e:
+                # Handle email sending failure
+                return Response({'success': False, 'message': 'Error sending email', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             print("ok")
             return Response({'ok': 'OTP sent successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -273,56 +308,156 @@ class testoo(APIView):
         deppkadalla = PDLocation.objects.get(id=id)
         print(deppkadalla.user)
         return Response({"main":"deppkadalla"}, status=status.HTTP_200_OK)
-class Dummy(APIView):
-    def get(self, request, id):
+    
+class Search(APIView):
+    def get(self, request, username):
         try:
-            user = CustomUsers.objects.get(id=id)
-            pickup_location = PickUpLocation.objects.filter(user=user).first()
-            drop_location = DropLocation.objects.filter(user=user).first()
-            if pickup_location and drop_location:
-                pic_lat = pickup_location.latitude
-                pic_lon = pickup_location.longitude
-                drp_lat = drop_location.latitude
-                drp_lon = drop_location.longitude
-                return Response({"userid":id,"pickuplatitude": pic_lat, "pickuplongitude": pic_lon,"droplatitude":drp_lat,"droplongitude":drp_lon}, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "Pickup location not found for the user"}, status=status.HTTP_404_NOT_FOUND)
+            user = CustomUsers.objects.get(username=username)
+            serializer = CustomUsersSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except CustomUsers.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({"error": f"User with username '{username}' not found."}, status=status.HTTP_404_NOT_FOUND)
+    
 
-
-
-
-
-
-class NearbyDriversAPIView(generics.ListAPIView):
-    serializer_class = CustomUserSerializer
-    def get(self, request, user_id):
+class PDLocationAPIView(APIView):
+    def get(self, request, format=None):
+        # user = CustomUsers.objects.filter(location__status=1)
+        users = CustomUsers.objects.filter(location__status=1)
+        serializer = CustomUsersSerial(users, many=True)
+        return Response(serializer.data)
+class PDLocationDetailAPIView(APIView):
+    def patch(self, request, pk, format=None):
+        try:
+            user = CustomUsers.objects.get(pk=pk)
+            pd_location = user.location
+        except PDLocation.DoesNotExist:
+            return Response({"error": "PDLocation not found"}, status=status.HTTP_404_NOT_FOUND)        
+        serializer = PDLocationSerializer(pd_location, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class dfd(APIView):
+    def post(self,request,pk,fromat=None):
+        print(pk)
+        user_id = request.data.get('user_id')
         user = CustomUsers.objects.get(id=user_id)
-        user_location = user.location
-        user_latitude = float(user_location.pickup_latitude)
-        user_longitude = float(user_location.pickup_longitude)
-        nearby_drivers = self.get_queryset()
-        updated_location_ids = []
-        for driver in nearby_drivers:
-            print(driver.location)
-            driver_latitude = float(driver.location.pickup_latitude)
-            driver_longitude = float(driver.location.pickup_longitude)
-            distance = self.calculate_distance(user_latitude, user_longitude, driver_latitude, driver_longitude) 
-            if distance <= 100:
-                updated_location_ids.append(str(driver.id))
-        return Response({"message": str(updated_location_ids)})
-    def calculate_distance(self, lat1, lon1, lat2, lon2):
-        point1 = (lat1, lon1)
-        point2 = (lat2, lon2)
-        print(geodesic(point1, point2).kilometers)
-        return geodesic(point1, point2).kilometers
+        print(user.location.acpted_driver)  
+        if user.location.acpted_driver == pk and user.location.status == 3:
+            serializer = PDlction(user.location)
+            return Response(serializer.data)    
+        else:
+            return Response("{}")    
 
-    def get_queryset(self):
-        nearby_drivers = CustomUsers.objects.filter(user_type='driver')
-        print(nearby_drivers)
-        return nearby_drivers
+class PDLocationAPIView2(APIView):
+
+    def get(self, request, pk, format=None):
+        try:
+            drive = CustomUsers.objects.get(pk=pk)
+            pd_location = drive.location
+            print(drive)
+        except PDLocation.DoesNotExist:
+            return Response({"error": "PDLocation not found"}, status=status.HTTP_404_NOT_FOUND)        
+        serializer = PDLocationSerializer2(pd_location)
+        if pd_location.status == 2:
+            print("rajus")
+            driver = CustomUsers.objects.get(id=pd_location.acpted_driver)
+            print(driver)
+            dict = {
+                "driver_id":pd_location.acpted_driver,
+                "driver_contact":driver.email,
+                "driver_full_name":driver.full_name,
+                "driver_phone_number":driver.phone_number,
+                # "driver_profile_image":driver.profile_image,
+            }
+            return Response(dict, status=status.HTTP_200_OK)
+        return Response({}, status=status.HTTP_200_OK)
+    
+
+    def post(self, request, format=None):
+        serializer = PDLocationSerializer2(data=request.data)
+        if serializer.is_valid():
+            user= serializer.validated_data['user']
+            try:
+                user = CustomUsers.objects.get(id=user.id)
+            except CustomUsers.DoesNotExist:
+                return Response({"error": "User does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+            pd_location = serializer.save()
+            user.location = pd_location
+            user.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self, request, pk, format=None):
+        try:
+            user = CustomUsers.objects.get(pk=pk)
+        except PDLocation.DoesNotExist:
+            return Response({"error": "PDLocation not found"}, status=status.HTTP_404_NOT_FOUND)
+        driver_id = request.data.get('driver_id')
+        print(driver_id)
+        driver = CustomUsers.objects.get(id=driver_id)
+        print(driver)
+        serializer = PDLocationSerializer2(user.location, data=request.data, partial=True)
+        if serializer.is_valid():
+            adriver = driver_id
+            serializer.save(acpted_driver = adriver)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# class NearbyDriversAPIView(generics.ListAPIView):
+#     serializer_class = CustomUserSerializer
+#     def get(self, request, user_id):
+#         user = CustomUsers.objects.get(id=user_id)
+#         user_location = user.location
+#         # print(user.is_accepted)
+#         if user.is_accepted == "False":
+#             print("sdfasdfadsfASDFVASDFASDFa")
+#             user_latitude = float(user_location.pickup_latitude)
+#             user_longitude = float(user_location.pickup_longitude)
+#             nearby_drivers = self.get_queryset()
+#             updated_location_ids = []
+#             for driver in nearby_drivers:
+#                 print(driver.location)
+#                 driver_latitude = float(driver.location.pickup_latitude)
+#                 driver_longitude = float(driver.location.pickup_longitude)
+#                 distance = self.calculate_distance(user_latitude, user_longitude, driver_latitude, driver_longitude) 
+#                 if distance <= 100:
+#                     updated_location_ids.append(driver.id)
+#             return Response({"message": str(updated_location_ids)})
+#         else:
+#             # pass
+#             print(user.is_accepted)
+#             driver = CustomUsers.objects.get(username=user.is_accepted)
+#             print(driver.id)
+#             return Response({"driver": driver.id})
+#     def calculate_distance(self, lat1, lon1, lat2, lon2):
+#         point1 = (lat1, lon1)
+#         point2 = (lat2, lon2)
+#         print(geodesic(point1, point2).kilometers)
+#         return geodesic(point1, point2).kilometers
+
+#     def get_queryset(self):
+#         nearby_drivers = CustomUsers.objects.filter(user_type='driver')
+#         print(nearby_drivers)
+#         return nearby_drivers
+
+# class Driveracpted(APIView):
+#     def post(self,request):
+#         serializer = CustomSerializer(data=request.data)
+#         if serializer.is_valid():
+#             user_id = request.data.get('user_id')
+#             driver_id = request.data.get('driver_id')
+
+#             user = CustomUsers.objects.get(id=2)
+#             driver = CustomUsers.objects.get(id=4)
+#             user.is_accepted = driver.username
+#             # user.is_accepted = True  # Assuming is_accepted is a boolean field
+#             user.save()  # Save only the is_accepted field
+        
+#             return Response({"message": "Driver accepted successfully"}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # class NearbyDriversAPIView(generics.ListAPIView):
 #     serializer_class = CustomUserSerializer
 
@@ -348,8 +483,7 @@ class NearbyDriversAPIView(generics.ListAPIView):
 #                 #     if address is None:
 #                 #         updated_location_ids.append(str(driver.id))
 #                 #     else:
-#                 #         updated_serializer.save(loaction_address=address)
-#                 updated_location_ids.append(str(driver.id))
+#                 #         updated_serializer.save(loacmail.id))
 #         return Response({"message": str(updated_location_ids)})
 #     def calculate_distance(self, lat1, lon1, lat2, lon2):
 #         point1 = (lat1, lon1)

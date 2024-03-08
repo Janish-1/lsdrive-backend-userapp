@@ -10,30 +10,42 @@ class CustomUsers(AbstractUser):
     phone_number = models.CharField(max_length=15, unique=True)
     password = models.CharField(max_length=255)
     user_type = models.CharField(max_length=20)
-    address = models.TextField(null=True, blank=True)
     eligible = models.BooleanField(default=False , null=True, blank=True)
-    available = models.BooleanField(default=False , null=True, blank=True)
-    updated = models.BooleanField(default=False , null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10,  blank=True, null=True)
     adhaar_id = models.CharField(max_length=12, unique=True, null=True, blank=True)
     driving_id = models.CharField(max_length=30, unique=True, null=True, blank=True)
     profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)    
     created_at = models.DateTimeField(auto_now_add=True)
+    available = models.BooleanField(default=False , null=True, blank=True)
+    updated = models.BooleanField(default=False , null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
-    loaction_address = models.TextField(max_length=300 )
+    location_address = models.TextField(max_length=300 )
     location = models.OneToOneField('PDLocation', on_delete=models.CASCADE, null=True, blank=True)
-    people_count = models.IntegerField(null=True, blank=True)
-    pickup_time = models.CharField(max_length=30,null=True, blank=True)
+    vehicle_type = models.CharField(max_length=30, null=True, blank=True)
     def __str__(self):
         return self.full_name
 class PDLocation(models.Model):
     user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE)
-    pickup_latitude = models.DecimalField(max_digits=50, decimal_places=16)
-    drop_latitude = models.DecimalField(max_digits=50, decimal_places=16)
-    pickup_longitude = models.DecimalField(max_digits=50, decimal_places=16)
-    drop_longitude = models.DecimalField(max_digits=50, decimal_places=16)
-    drop_address = models.TextField()
-    pickup_address = models.TextField()
+    current_latitude = models.DecimalField(max_digits=50, decimal_places=16)
+    current_longitude = models.DecimalField(max_digits=50, decimal_places=16)
+    destination_latitude = models.DecimalField(max_digits=50, decimal_places=16)
+    destination_longitude = models.DecimalField(max_digits=50, decimal_places=16)
+    destination_address = models.TextField()
+    people_count = models.IntegerField()
+    pickup_time = models.CharField(max_length=30)
+    status = models.IntegerField(default=0)
+    acpted_driver = models.IntegerField(default=0)
+
+
+
+
+
+# class Booking(models.Model):
+#     user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE)
+
+
+
 # class DropLocation(models.Model):
     # user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE)
     # latitude = models.DecimalField(max_digits=50, decimal_places=16)
