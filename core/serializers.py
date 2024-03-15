@@ -54,7 +54,7 @@ class PDLocationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PDLocation
-        fields = ['current_latitude','current_longitude','destination_latitude', 'destination_longitude', 'destination_address', 'people_count', 'pickup_time', 'status', 'user_id', 'username', 'full_name','phone_number']
+        fields = ['current_latitude','current_longitude','destination_latitude', 'destination_longitude', 'pickup_address','destination_address', 'people_count', 'pickup_time', 'status', 'user_id', 'username', 'full_name','phone_number']
 class PDLocationSerializer2(serializers.ModelSerializer):
     class Meta:
         model = PDLocation

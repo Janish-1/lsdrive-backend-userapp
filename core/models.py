@@ -32,6 +32,7 @@ class PDLocation(models.Model):
     destination_latitude = models.DecimalField(max_digits=50, decimal_places=16)
     destination_longitude = models.DecimalField(max_digits=50, decimal_places=16)
     destination_address = models.TextField()
+    pickup_address = models.TextField()
     people_count = models.IntegerField()
     pickup_time = models.CharField(max_length=30)
     status = models.IntegerField(default=0)

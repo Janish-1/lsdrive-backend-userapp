@@ -320,11 +320,20 @@ class Search(APIView):
     
 
 class PDLocationAPIView(APIView):
-    def get(self, request, format=None):
-        # user = CustomUsers.objects.filter(location__status=1)
+    def get(self, request, pk,format=None):
+        user = CustomUsers.objects.get(id=pk)
+        print("kerbgarbrgawkjebg",user)
+        # users = CustomUsers.objects.filter(location__status=1,vehicle_type=user.vehicle_type)
         users = CustomUsers.objects.filter(location__status=1)
         serializer = CustomUsersSerial(users, many=True)
         return Response(serializer.data)
+
+# class PDLocationAPIView(APIView):
+#     def get(self, request, format=None):
+#         # user = CustomUsers.objects.filter(location__status=1)
+#         users = CustomUsers.objects.filter(location__status=1)
+#         serializer = CustomUsersSerial(users, many=True)
+#         return Response(serializer.data)
 class PDLocationDetailAPIView(APIView):
     def patch(self, request, pk, format=None):
         try:
