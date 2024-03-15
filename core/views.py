@@ -580,27 +580,34 @@ def get_past_rides(request, user_id):
 @api_view(['GET'])
 def get_driver_rides(request, driver_id):
     if request.method == 'GET':
-        # Query active PDLocation objects for the specific user ID with status 1 or 2
-        active_rides = PDLocation.objects.filter(acpted_driver=driver_id)
+        # Query active PDLocation objects for the specific driver ID with status 3
+        active_rides = PDLocation.objects.filter(acpted_driver=driver_id, status=3)
 
-        # Prepare data to be serialized (if needed)
+        # Prepare data to be serialized
         data = []
         for ride in active_rides:
-            ride_data = {
-                'id': ride.id,
-                'user_id': ride.user_id,
-                'current_latitude': float(ride.current_latitude),
-                'current_longitude': float(ride.current_longitude),
-                'destination_latitude': float(ride.destination_latitude),
-                'destination_longitude': float(ride.destination_longitude),
-                'destination_address': ride.destination_address,
-                'pickup_address': ride.pickup_address,
-                'people_count': ride.people_count,
-                'pickup_time': ride.pickup_time,
-                'status': ride.status,
-                'acpted_driver': ride.acpted_driver,
-            }
-            data.append(ride_data)
+            try:
+                # Access the CustomUser associated with the ride and retrieve name and phone number
+                custom_user = CustomUsers.objects.get(pk=ride.user_id)
+                ride_data = {
+                    'id': ride.id,
+                    'user_id': ride.user_id,
+                    'username': custom_user.username,  # Assuming 'name' is the field name in the CustomUsers model
+                    'phone_number': custom_user.phone_number,  # Assuming 'phone_number' is the field name in the CustomUsers model
+                    'current_latitude': float(ride.current_latitude),
+                    'current_longitude': float(ride.current_longitude),
+                    'destination_latitude': float(ride.destination_latitude),
+                    'destination_longitude': float(ride.destination_longitude),
+                    'destination_address': ride.destination_address,
+                    'pickup_address': ride.pickup_address,
+                    'people_count': ride.people_count,
+                    'pickup_time': ride.pickup_time,
+                    'status': ride.status,
+                    'acpted_driver': ride.acpted_driver,
+                }
+                data.append(ride_data)
+            except CustomUsers.DoesNotExist:
+                pass  # Handle the case when the CustomUser associated with the ride does not exist
 
         # Return data as JSON response
         return JsonResponse(data, safe=False)
@@ -635,6 +642,26 @@ def get_driveraccepted_rides(request, user_id):
 
         # Return data as JSON response
         return JsonResponse(data, safe=False)
+    else:
+        # Method not allowed
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@api_view(['PATCH'])
+def end_ride(request, ride_id):
+    if request.method == 'PATCH':
+        try:
+            # Find the ride object by ID
+            ride = PDLocation.objects.get(id=ride_id)
+
+            # Update the status to 4 (completed)
+            ride.status = 4
+            ride.save()
+
+            # Return success response
+            return JsonResponse({'message': 'Ride ended successfully'}, status=200)
+        except PDLocation.DoesNotExist:
+            # If the ride with the provided ID doesn't exist, return 404 Not Found
+            return JsonResponse({'error': 'Ride not found'}, status=404)
     else:
         # Method not allowed
         return JsonResponse({'error': 'Method not allowed'}, status=405)
