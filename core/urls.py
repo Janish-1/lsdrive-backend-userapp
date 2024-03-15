@@ -22,5 +22,8 @@ urlpatterns = [
     path('update-from-user/<int:pk>/', PDLocationDetailAPIView.as_view(), name='update-from-user'),
     path('create-booking-data/', PDLocationAPIView2.as_view(), name='create-booking-data'),
     path('accpet-from-driver/<int:pk>', PDLocationAPIView2.as_view(), name='accpet-from-driver'),
-
+    path('get-current-rides/<int:user_id>/', get_active_rides, name='get_active_rides'),
+    path('get-active-rides/<int:user_id>/', get_past_rides ,name='get_past_rides'),
+    path('get-driver-rides/<int:driver_id>', get_driver_rides, name='get_driver_rides'),
+    path('get-driveraccepted-rides/<int:user_id>', get_driveraccepted_rides, name='get_driveraccepted_rides'),
 ]

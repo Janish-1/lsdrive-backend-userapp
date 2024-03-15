@@ -25,6 +25,7 @@ class CustomUsers(AbstractUser):
     vehicle_type = models.CharField(max_length=30, null=True, blank=True)
     def __str__(self):
         return self.full_name
+        
 class PDLocation(models.Model):
     user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE)
     current_latitude = models.DecimalField(max_digits=50, decimal_places=16)
