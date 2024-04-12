@@ -646,6 +646,37 @@ def get_driveraccepted_rides(request, user_id):
         # Method not allowed
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+@api_view(['GET'])
+def ended_rides(request, user_id):
+    if request.method == 'GET':
+        # Query active PDLocation objects for the specific user ID with status 1 or 2
+        active_rides = PDLocation.objects.filter(user_id=user_id, status__in=[4])
+
+        # Prepare data to be serialized (if needed)
+        data = []
+        for ride in active_rides:
+            ride_data = {
+                'id': ride.id,
+                'user_id': ride.user_id,
+                'current_latitude': float(ride.current_latitude),
+                'current_longitude': float(ride.current_longitude),
+                'destination_latitude': float(ride.destination_latitude),
+                'destination_longitude': float(ride.destination_longitude),
+                'destination_address': ride.destination_address,
+                'pickup_address': ride.pickup_address,
+                'people_count': ride.people_count,
+                'pickup_time': ride.pickup_time,
+                'status': ride.status,
+                'acpted_driver': ride.acpted_driver,
+            }
+            data.append(ride_data)
+
+        # Return data as JSON response
+        return JsonResponse(data, safe=False)
+    else:
+        # Method not allowed
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
 @api_view(['PATCH'])
 def end_ride(request, ride_id):
     if request.method == 'PATCH':

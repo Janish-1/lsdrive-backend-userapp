@@ -26,5 +26,6 @@ urlpatterns = [
     path('get-active-rides/<int:user_id>/', get_past_rides ,name='get_past_rides'),
     path('get-driver-rides/<int:driver_id>', get_driver_rides, name='get_driver_rides'),
     path('get-driveraccepted-rides/<int:user_id>', get_driveraccepted_rides, name='get_driveraccepted_rides'),
+    path('get-ended-rides/<int:user_id>',ended_rides,name='endedrides'),
     path('end-ride/<int:ride_id>',end_ride,name="end_ride"),
 ]
