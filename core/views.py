@@ -149,7 +149,7 @@ class CustomUserAPIView(APIView):
             print(serializer)
             serializer.save()
             main = serializer.data
-            return Response({"asgi": main}, status=status.HTTP_201_CREATED)
+            return Response({"asgi": main}, status=status.HTTP_200_OK)
         errors = serializer.errors
         print(errors)
         return Response({'error': "Bad Request", 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -300,7 +300,7 @@ class PDLocationCreateAPIView(APIView):
             user_instance = location_instance.user
             user_instance.location = location_instance
             user_instance.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -396,7 +396,7 @@ class PDLocationAPIView2(APIView):
             pd_location = serializer.save()
             user.location = pd_location
             user.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self, request, pk, format=None):
